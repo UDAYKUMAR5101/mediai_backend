@@ -28,13 +28,25 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
 
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Profile
 
-class ProfileSerializer(serializers.ModelSerializer):
+User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profile
-        fields = ['age', 'image', 'gender', 'date_of_birth', 'notes']
+        model = User
+        fields = ['id', 'username', 'email']
+from rest_framework import serializers
+from .models import UserData
+
+class UserDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserData
+        fields = ['fullname', 'age', 'gender', 'date_of_birth', 'note', 'image', 'updated_at']
+
+
+
 
 from rest_framework import serializers
 from .models import Symptoms
@@ -74,4 +86,48 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         return value
 
+from rest_framework import serializers
+from .models import PredictionResult
 
+class PredictionResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PredictionResult
+        fields = '__all__'
+
+
+from rest_framework import serializers
+from .models import RiskAssessment
+
+class RiskAssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RiskAssessment
+        fields = '__all__'
+
+
+from rest_framework import serializers
+from .models import SymptomsRiskAssessment, ImageRiskAssessment
+
+class UnifiedRiskSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    risk_level = serializers.CharField()
+    prediction_percentage = serializers.FloatField()
+    mode = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        # Only ImageRiskAssessment has an image
+        if hasattr(obj, 'image') and obj.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+from rest_framework import serializers
+from .models import RiskAssessment
+
+class RiskAssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RiskAssessment
+        fields = ['id', 'risk_level', 'prediction_percentage', 'mode', 'symptoms', 'image', 'created_at']
+        read_only_fields = ['id', 'created_at']
